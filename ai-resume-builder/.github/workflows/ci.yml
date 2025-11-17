@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install backend deps
+        working-directory: ./ai-resume-builder/backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: ./ai-resume-builder/backend
+        run: npm test
+
+      - name: Run backend secrets check
+        working-directory: ./ai-resume-builder/backend
+        run: npm run check-secrets
+
+      - name: Lint / quick safety (optional)
+        run: echo "CI finished"

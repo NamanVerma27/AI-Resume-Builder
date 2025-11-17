@@ -1,9 +1,0 @@
-{
-  "name": "ai-resume-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "echo \"Front-end dev not initialized yet\" && exit 0"
-  },
-  "license": "MIT"
-}

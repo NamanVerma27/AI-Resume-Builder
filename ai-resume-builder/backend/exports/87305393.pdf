@@ -1,0 +1,12 @@
+Mock PDF for job 87305393
+Generated at: 2025-11-17T18:59:05.482Z
+
+Payload:
+{
+  "resume": {
+    "name": "Alice Example",
+    "summary": "Quick dev"
+  }
+}
+
+--- End of mock PDF ---
