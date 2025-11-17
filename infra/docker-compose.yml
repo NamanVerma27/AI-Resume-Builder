@@ -1,0 +1,9 @@
+# Placeholder docker-compose for local dev (expanded in later milestones)
+version: '3.8'
+services:
+  backend:
+    image: alpine
+    command: ["sh","-c","echo 'Define backend service in Milestone 1' && sleep 3600"]
+  frontend:
+    image: alpine
+    command: ["sh","-c","echo 'Define frontend service in Milestone 2' && sleep 3600"]
