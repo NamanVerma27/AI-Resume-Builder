@@ -1,18 +1,28 @@
 // backend/src/adapters/llm/index.js
-// Provider-agnostic adapter dispatcher.
-// Exports: generateSummary, rewriteBullets, atsSuggestion
-//
-// Default: use mock adapter for local dev.
-// To enable a provider, set LLM_PROVIDER=openai (and provide OPENAI_API_KEY server-side).
-//
-// This file makes it easy to add other providers in the future (e.g., Cohere, Anthropic).
+// Provider dispatcher: supports 'mock', 'openai', 'cohere', 'gemini'.
+// Default: mock (safe for local dev).
 
-const provider = process.env.LLM_PROVIDER || "mock";
+const provider = (process.env.LLM_PROVIDER || 'mock').toLowerCase();
 
-if (provider === "openai") {
-  console.log("[LLM] Using OpenAI provider");
-  module.exports = require("./openai");
+let adapter;
+if (provider === 'openai') {
+  console.log('[LLM] Using OpenAI provider');
+  adapter = require('./openai');
+} else if (provider === 'cohere') {
+  console.log('[LLM] Using Cohere provider');
+  adapter = require('./cohere');
+} else if (provider === 'gemini') {
+  console.log('[LLM] Using Gemini provider');
+  adapter = require('./gemini');
 } else {
-  console.log("[LLM] Using MOCK provider");
-  module.exports = require("./mock");
+  console.log('[LLM] Using MOCK provider');
+  adapter = require('./mock');
 }
+
+// Export a consistent API
+module.exports = {
+  generateSummary: adapter.generateSummary,
+  rewriteBullets: adapter.rewriteBullets,
+  atsSuggestion: adapter.atsSuggestion,
+  _adapter: adapter
+};

@@ -1,7 +1,129 @@
+/* frontend/src/styles.css
+   Updated: stronger card separation, larger titles, refined inputs & buttons.
+*/
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* small app styles */
-html,body,#root { height: 100%; }
-body { @apply bg-slate-50 text-slate-900; }
+/* Theme tokens */
+:root{
+  --accent-500: #2b8bf6;
+  --accent-600: #1f6fe0;
+  --muted-500: #6b7280;
+  --card-bg: rgba(255,255,255,0.98);
+  --card-border: rgba(15,23,42,0.06);
+  --radius-md: 12px;
+  --shadow-soft: 0 10px 30px rgba(16,24,40,0.08);
+}
+
+/* Body */
+body{
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #f7f8ff 0%, #fbfbff 100%);
+  color: #0f172a;
+  margin: 0;
+}
+
+/* App shell */
+.app-shell {
+  max-width: 1200px;
+  margin: 28px auto;
+  padding: 24px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.88));
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--card-border);
+}
+
+/* header */
+.app-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
+.app-title { font-weight:800; font-size:24px; letter-spacing:-0.3px; }
+.app-sub { color:var(--muted-500); font-size:13px; margin-top:4px; }
+
+/* Header buttons */
+.header-actions { display:flex; gap:10px; align-items:center; }
+.btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:10px; padding:8px 14px; font-weight:700; cursor:pointer;
+  border: 1px solid transparent; font-size:14px;
+}
+.btn-ghost { background:transparent; color:var(--muted-500); border:1px solid rgba(15,23,42,0.06); }
+.btn-primary {
+  background: linear-gradient(180deg,var(--accent-500),var(--accent-600));
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(43,139,246,0.12);
+}
+
+/* layout grid */
+.editor-grid { display:grid; grid-template-columns: 1fr 360px; gap:22px; align-items:start; }
+
+/* panel/card */
+.panel-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  padding: 18px;
+  box-shadow: 0 12px 36px rgba(16,24,40,0.06);
+}
+
+/* Card title: slightly larger than before */
+.card-title { font-size:18px; font-weight:800; margin-bottom:14px; color:#0b1220; }
+
+/* Inputs: refined look */
+.input {
+  width:100%;
+  padding:12px 14px;
+  border-radius:10px;
+  border:1px solid rgba(15,23,42,0.07);
+  background:white;
+  outline:none;
+  font-size:15px;
+  color: #0f172a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.input::placeholder { color: #9ca3af; font-weight:500; }
+.input:focus { box-shadow: 0 10px 30px rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.18); }
+
+/* textarea */
+.textarea {
+  min-height: 110px;
+  padding: 12px 14px;
+  resize: vertical;
+  border-radius:10px;
+  border:1px solid rgba(15,23,42,0.07);
+  background:white;
+  font-size:15px;
+  color:#0f172a;
+}
+.textarea::placeholder { color: #9ca3af; }
+
+/* small helper text */
+.helper { color: var(--muted-500); font-size:13px; }
+
+/* LLM result highlight */
+.llm-box {
+  background: linear-gradient(90deg, rgba(59,130,246,0.04), rgba(16,185,129,0.02));
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(59,130,246,0.05);
+}
+
+/* Buttons inside cards: consistent and less tall */
+.card-controls { display:flex; gap:10px; align-items:center; margin-top:8px; }
+.btn-sm { padding:8px 10px; border-radius:10px; font-weight:700; font-size:14px; }
+
+/* Reduce visual dominance of primary button when inside cards by slightly decreasing size */
+.btn-primary.btn-sm { padding:8px 10px; box-shadow: 0 8px 18px rgba(43,139,246,0.10); }
+
+/* Make sure lists inside preview look tidy */
+.preview-list li { margin-bottom:6px; color:#0f172a; }
+
+/* Hide duplicate header-actions if they appear inside a panel-card (fix for duplicate Save/Share) */
+.panel-card .header-actions { display:none !important; }
+
+/* Responsive */
+@media (max-width: 980px) {
+  .editor-grid { grid-template-columns: 1fr; }
+  .header-actions { gap:8px; }
+}

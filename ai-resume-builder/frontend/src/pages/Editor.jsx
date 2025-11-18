@@ -1,155 +1,148 @@
-// Full file (updated): includes LLMPanel integration
-import React, { useEffect, useState, useRef } from 'react';
-import Preview from '../components/Preview';
-import LLMPanel from '../components/LLMPanel';
+// frontend/src/pages/Editor.jsx
+// Clean Editor: no duplicated header/Share/Save, uses design tokens from styles.css
+import React, { useEffect, useState } from 'react';
+import '../styles.css'; // ensure our CSS loads
 
-const LS_KEY = 'resume:draft';
-const AUTOSAVE_DELAY_MS = 2000;
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-
-function parseOrDefault(text) {
-  try { return JSON.parse(text); } catch (e) { return { raw: text }; }
-}
-
-export default function Editor() {
-  const initial = typeof window !== 'undefined' ? localStorage.getItem(LS_KEY) : null;
-  const [text, setText] = useState(initial || JSON.stringify({
-    name: "Your Name",
-    summary: "Short professional summary",
-    experience: [{ company: "Acme Inc", summary: "Built stuff", bullets: ["Delivered X", "Reduced Y"] }],
-    skills: ["Node.js", "SQL"]
-  }, null, 2));
-  const [lastSavedAt, setLastSavedAt] = useState(null);
-  const [parsed, setParsed] = useState(parseOrDefault(initial || text));
-  const [saving, setSaving] = useState(false);
-  const [serverSlug, setServerSlug] = useState(null);
-  const [serverError, setServerError] = useState(null);
-
-  const timer = useRef(null);
-  useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      try {
-        localStorage.setItem(LS_KEY, text);
-        setLastSavedAt(new Date().toISOString());
-        setParsed(parseOrDefault(text));
-      } catch (e) {
-        console.error('Autosave failed', e);
-      }
-    }, AUTOSAVE_DELAY_MS);
-
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [text]);
-
-  const saveNow = () => {
+export default function Editor({ resume: propResume, setResume: setPropResume } = {}) {
+  // If parent provided resume via props (App.jsx), use it. Otherwise maintain local state.
+  const [localMode] = useState(!propResume || !setPropResume);
+  const [resume, setResume] = useState(() => {
+    if (!localMode && propResume) return propResume;
     try {
-      localStorage.setItem(LS_KEY, text);
-      setLastSavedAt(new Date().toISOString());
-      setParsed(parseOrDefault(text));
+      const raw = localStorage.getItem('resume:draft');
+      return raw ? JSON.parse(raw) : { name: '', summary: '', experience: [], skills: [] };
     } catch (e) {
-      console.error('Save failed', e);
+      return { name: '', summary: '', experience: [], skills: [] };
     }
-  };
+  });
 
-  const clearDraft = () => {
-    localStorage.removeItem(LS_KEY);
-    const empty = JSON.stringify({ name: "", summary: "", experience: [], skills: [] }, null, 2);
-    setText(empty);
-    setParsed(parseOrDefault(empty));
-    setLastSavedAt(null);
-    setServerSlug(null);
-    setServerError(null);
-  };
+  // If being controlled by parent, keep in sync
+  useEffect(() => {
+    if (!localMode && propResume) setResume(propResume);
+  }, [propResume, localMode]);
 
-  const saveToServer = async () => {
+  useEffect(() => {
+    if (localMode) localStorage.setItem('resume:draft', JSON.stringify(resume));
+    else setPropResume && setPropResume(resume);
+  }, [resume, localMode, setPropResume]);
+
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  function updateField(k, v) {
+    setResume(prev => ({ ...prev, [k]: v }));
+  }
+  function addExp() {
+    setResume(prev => ({ ...prev, experience: [...(prev.experience || []), { company: '', summary: '' }] }));
+  }
+  function updateExp(i, k, v) {
+    setResume(prev => {
+      const ex = [...(prev.experience || [])];
+      ex[i] = { ...ex[i], [k]: v };
+      return { ...prev, experience: ex };
+    });
+  }
+
+  async function saveToServer() {
     setSaving(true);
-    setServerError(null);
-    setServerSlug(null);
-    let payload = parseOrDefault(text);
-
+    setMsg(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/resumes`, {
+      const res = await fetch('/api/v1/resumes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(resume),
       });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || json || 'save_failed');
-      setServerSlug(json.slug);
-    } catch (err) {
-      console.error('Save to server failed', err);
-      setServerError(String(err.message || err));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // getDraft for LLMPanel to call
-  const getDraft = () => {
-    return parseOrDefault(text);
-  };
+      const j = await res.json();
+      if (j.ok) {
+        setMsg(`Saved anonymously — slug: ${j.slug}`);
+      } else {
+        setMsg('Save failed');
+      }
+    } catch (e) {
+      setMsg(`Save error: ${e.message}`);
+    } finally { setSaving(false); }
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <section className="p-4 bg-white rounded shadow">
-        <div className="flex items-start justify-between">
-          <h2 className="text-lg font-medium">Editor</h2>
-          <div className="text-sm text-slate-500">
-            {lastSavedAt ? `Saved: ${new Date(lastSavedAt).toLocaleTimeString()}` : 'Not saved yet'}
-          </div>
-        </div>
+    <div className="panel-card" style={{ minHeight: 420 }}>
+      <div className="card-title">Editor</div>
 
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="mt-3 w-full h-[55vh] p-3 border rounded text-sm font-mono"
+      <div style={{ marginBottom: 12 }}>
+        <label className="helper" style={{ display: 'block', marginBottom: 6 }}>Name</label>
+        <input
+          className="input"
+          value={resume.name}
+          onChange={e => updateField('name', e.target.value)}
+          placeholder="Full name (optional)"
         />
+      </div>
 
-        <div className="mt-3 flex gap-2">
-          <button className="px-3 py-1 bg-slate-800 text-white rounded" onClick={saveNow}>Save now</button>
-          <button className="px-3 py-1 border rounded" onClick={clearDraft}>Clear draft</button>
-          <button
-            className="px-3 py-1 bg-blue-600 text-white rounded"
-            onClick={saveToServer}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save to server (anonymous)'}
-          </button>
-        </div>
+      <div style={{ marginBottom: 12 }}>
+        <label className="helper" style={{ display: 'block', marginBottom: 6 }}>Summary</label>
+        <input
+          className="input"
+          value={resume.summary}
+          onChange={e => updateField('summary', e.target.value)}
+          placeholder="Short professional summary (one sentence)"
+        />
+      </div>
 
-        {serverSlug && (
-          <div className="mt-3 text-sm">
-            <div>Saved anonymously. Share this link to view:</div>
-            <a
-              className="text-blue-600 underline"
-              href={`/view/${serverSlug}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {window.location.origin}/view/{serverSlug}
-            </a>
-            <div className="text-xs text-slate-500 mt-1">Note: this is an anonymous slug — no account required.</div>
-          </div>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>Experience</div>
+
+        {(resume.experience || []).length === 0 && (
+          <div className="helper" style={{ marginBottom: 8 }}>No experience entries yet — add one below.</div>
         )}
 
-        {serverError && <div className="mt-3 text-red-600 text-sm">Error: {serverError}</div>}
+        {(resume.experience || []).map((ex, i) => (
+          <div key={i} style={{ marginBottom: 10 }} className="p-3" >
+            <input
+              className="input"
+              placeholder="Company"
+              value={ex.company || ''}
+              onChange={e => updateExp(i, 'company', e.target.value)}
+              style={{ marginBottom: 8 }}
+            />
+            <textarea
+              className="textarea"
+              placeholder="Summary — what you did / impact (one or two lines)"
+              value={ex.summary || ''}
+              onChange={e => updateExp(i, 'summary', e.target.value)}
+            />
+          </div>
+        ))}
 
-        <div className="mt-3 text-xs text-slate-500">
-          <strong>Autosave:</strong> drafts saved to <code>{LS_KEY}</code> every {AUTOSAVE_DELAY_MS/1000}s.
+        <div style={{ marginTop: 8 }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={addExp}
+            type="button"
+          >
+            Add experience
+          </button>
         </div>
+      </div>
 
-        {/* LLM panel */}
-        <LLMPanel getDraft={getDraft} />
-      </section>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={saveToServer}
+          disabled={saving}
+          type="button"
+        >
+          {saving ? 'Saving…' : 'Save anonymously'}
+        </button>
 
-      <section className="p-4 bg-white rounded shadow">
-        <h2 className="text-lg font-medium">Preview</h2>
-        <div className="mt-3">
-          <Preview resume={parsed} />
-        </div>
-      </section>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => { navigator.clipboard.writeText(location.href).catch(()=>{}); }}
+          type="button"
+        >
+          Copy link
+        </button>
+
+        <div style={{ marginLeft: 'auto' }} className="helper">{msg || ''}</div>
+      </div>
     </div>
   );
 }

@@ -1,24 +1,47 @@
-import React from 'react';
+// frontend/src/App.jsx
+import React, { useState } from 'react';
 import Editor from './pages/Editor';
-import View from './pages/View';
+import LLMPanel from './components/LLMPanel';
+import Preview from './components/Preview';
+import './styles.css';
 
-/**
- * Very small router based on location.pathname.
- * Routes:
- *  - / or /editor  => Editor
- *  - /view/:slug   => View
- *
- * This keeps dependencies minimal (no react-router) and is easy to replace later.
- */
 export default function App() {
-  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const parts = path.split('/').filter(Boolean);
+  const [resume, setResume] = useState({
+    name: '',
+    summary: '',
+    experience: [],
+    skills: []
+  });
+  const [llmResult, setLlmResult] = useState(null);
 
-  if (parts[0] === 'view' && parts[1]) {
-    const slug = parts[1];
-    return <View slug={slug} />;
-  }
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <div className="app-title">AI Resume Builder</div>
+          <div className="app-sub">Write, refine and export resumes — anonymous by design.</div>
+        </div>
 
-  // default to editor
-  return <Editor />;
+        <div className="header-actions">
+          <button className="btn btn-ghost">Share</button>
+          <button className="btn btn-primary">Save</button>
+        </div>
+      </header>
+
+      <div className="editor-grid">
+        {/* Render Editor directly — Editor likely includes its own card; avoid extra wrapper to prevent duplicate titles/buttons */}
+        <div>
+          <Editor resume={resume} setResume={setResume} />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <LLMPanel resume={resume} onResult={(r) => {
+            setLlmResult(r);
+            if (r && r.summary) setResume(prev => ({ ...prev, summary: r.summary }));
+          }} />
+          <Preview resume={resume} llmResult={llmResult} />
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,50 +1,72 @@
+// frontend/src/components/Preview.jsx
 import React from 'react';
 
-function Skills({ skills = [] }) {
-  if (!skills || skills.length === 0) return null;
+export default function Preview({ resume, llmResult }) {
   return (
-    <div className="mt-2">
-      <h3 className="font-semibold text-sm">Skills</h3>
-      <div className="flex flex-wrap gap-2 mt-1">
-        {skills.map((s, i) => (
-          <span key={i} className="text-xs px-2 py-1 bg-slate-100 rounded">{s}</span>
-        ))}
+    <div className="panel-card">
+      <div className="card-title">Preview</div>
+
+      <div style={{ marginBottom: 10 }}>
+        <div className="helper">Name</div>
+        <div style={{ fontWeight: 600, marginTop: 6 }}>{resume?.name || '—'}</div>
       </div>
-    </div>
-  );
-}
 
-function Experience({ experience = [] }) {
-  if (!experience || experience.length === 0) return null;
-  return (
-    <div className="mt-3">
-      <h3 className="font-semibold text-sm">Experience</h3>
-      <ul className="mt-1 list-disc pl-5 text-sm">
-        {experience.map((e, i) => (
-          <li key={i}>
-            <div className="font-medium">{e.company || e.role || 'Company'}</div>
-            <div className="text-slate-600 text-sm">{e.summary || ''}</div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+      <div style={{ marginBottom: 10 }}>
+        <div className="helper">Summary</div>
+        <div style={{ marginTop: 6, color: '#334155' }}>{resume?.summary || '—'}</div>
+      </div>
 
-export default function Preview({ resume = {} }) {
-  if (resume.raw && typeof resume.raw === 'string') {
-    // fallback when user typed invalid JSON — show raw text
-    return <pre className="whitespace-pre-wrap text-sm">{resume.raw}</pre>;
-  }
+      <div style={{ marginBottom: 6 }}>
+        <div className="helper">Experience</div>
+        <ul className="preview-list" style={{ marginTop: 8 }}>
+          {(resume?.experience || []).length === 0 ? (
+            <li className="helper">No experience added</li>
+          ) : (
+            (resume.experience || []).map((e, i) => (
+              <li key={i} style={{ marginBottom: 6 }}>{e.summary || '—'}</li>
+            ))
+          )}
+        </ul>
+      </div>
 
-  const name = resume.name || resume.basics?.name || 'Your name';
-  const summary = resume.summary || resume.basics?.summary || '';
-  return (
-    <div>
-      <div className="text-xl font-semibold">{name}</div>
-      <div className="text-slate-600 mt-1">{summary}</div>
-      <Skills skills={resume.skills} />
-      <Experience experience={resume.experience} />
+      {llmResult && (
+        <div style={{ marginTop: 12, borderTop: '1px solid rgba(15,23,42,0.04)', paddingTop: 12 }}>
+          {/* summary */}
+          {llmResult.summary && (
+            <div className="llm-box" style={{ marginBottom: 10 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>AI summary</div>
+              <div>{llmResult.summary}</div>
+            </div>
+          )}
+
+          {/* rewritten bullets */}
+          {llmResult.rewritten && Array.isArray(llmResult.rewritten) && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>Rewritten bullets</div>
+              <ul className="preview-list">
+                {llmResult.rewritten.map((b, i) => <li key={i}>{b}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {/* ATS */}
+          {typeof llmResult.score === 'number' && (
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ fontWeight: 700 }}>ATS score: <span style={{ fontWeight: 900 }}>{llmResult.score}</span></div>
+              {llmResult.suggestions && llmResult.suggestions.length > 0 && (
+                <ul className="preview-list">
+                  {llmResult.suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <details style={{ marginTop: 8, color: 'var(--muted-500)', fontSize: 12 }}>
+            <summary>Raw result</summary>
+            <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(llmResult, null, 2)}</pre>
+          </details>
+        </div>
+      )}
     </div>
   );
 }
